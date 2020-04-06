@@ -1,0 +1,3 @@
+// configured options for GammaGamma
+#define GammaGamma_VERSION_MAJOR @GammaGamma_VERSION_MAJOR@
+#define GammaGamma_VERSION_MINOR @GammaGamma_VERSION_MINOR@
