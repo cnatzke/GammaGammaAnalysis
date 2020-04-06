@@ -1,3 +1,11 @@
+#ifndef GAMMAGAMMAANALYSIS_H
+#define GAMMAGAMMAANALYSIS_H
+
 // configured options for GammaGamma
-#define GammaGamma_VERSION_MAJOR @GammaGamma_VERSION_MAJOR@
-#define GammaGamma_VERSION_MINOR @GammaGamma_VERSION_MINOR@
+#define GammaGammaAnalysis_VERSION_MAJOR @GammaGammaAnalysis_VERSION_MAJOR@
+#define GammaGammaAnalysis_VERSION_MINOR @GammaGammaAnalysis_VERSION_MINOR@
+
+int OpenFile(std::string fileName);
+void PrintUsage(char* argv[]);
+
+#endif
