@@ -32,7 +32,6 @@ execute_process(COMMAND grsi-config --all-libs --GRSIData-libs --root
    OUTPUT_VARIABLE GRSI_CONFIG
    OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-
 # Message for debugging
 #message(STATUS "Found Grsisort libraries: ${GRSI_CONFIG}")
 
@@ -42,6 +41,10 @@ file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 # Naming main executable
 add_executable(GammaGammaAnalysis ${SOURCES})
+
+add_custom_command(TARGET GammaGammaAnalysis PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+${PROJECT_SOURCE_DIR}/misc/ $<TARGET_FILE_DIR:GammaGammaAnalysis>)
 
 # linking libraries
 target_link_libraries(GammaGammaAnalysis PUBLIC

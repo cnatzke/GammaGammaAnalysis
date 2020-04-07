@@ -5,7 +5,20 @@
 #define GammaGammaAnalysis_VERSION_MAJOR @GammaGammaAnalysis_VERSION_MAJOR@
 #define GammaGammaAnalysis_VERSION_MINOR @GammaGammaAnalysis_VERSION_MINOR@
 
-int OpenFile(std::string fileName);
+typedef struct grif_gamma_gamma_event {
+	double grif1Energy;
+	double grif2Energy;
+	int grif1ArrayNumber;
+	int grif2ArrayNumber;
+	double deltaTime;
+	double angle;
+} GrifGammaGammaEvent_t;
+
+int ProcessData();
+void DisplayLoadingMessage();
+bool OpenFile(std::string fileName);
 void PrintUsage(char* argv[]);
+
+GrifGammaGammaEvent_t *tree_data = NULL;
 
 #endif
