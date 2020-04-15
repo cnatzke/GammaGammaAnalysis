@@ -64,15 +64,25 @@ int ProcessData(){
 	std::string fName = gChain->GetCurrentFile()->GetName();
 	int run_number = GetRunNumber(fName.c_str());
 	const char* branch_name = "TGriffin";
+	float ggHigh = 100.; // max time difference for gamma gamma
+	float ggLow = 500.; // min time difference for gamma gamma
+	float bgHigh = 2000.; // max time diff for gamma gamma bg
+
+	float gbin = 5500;
+	float gx = 0;
+	float gy = gbin;
+
 
 	std::cout << "Processing run " << run_number << " with " << gChain->GetNtrees() << " file(s)" << std::endl;
 
 	long analysis_entries = gChain->GetEntries();
 
 	if (gChain->FindBranch(branch_name)) {
-		gChain->SetBranchAddress("TGriffin", &griffin_data);
+		gChain->SetBranchAddress("TGriffin", &fGrif);
 		std::cout << "Succesfully found " << branch_name << " branch" << std::endl;
 	}
+
+	TObjArray HList(0);
 
 	// display loading message
     DisplayLoadingMessage();
@@ -86,41 +96,56 @@ int ProcessData(){
 		// retrieve entries from trees
 		gChain->GetEntry(i);
 
-		for (auto g1 = 0; g1 < griffin_data->GetSuppressedMultiplicity(fGriffinBgo); ++g1) {
-			auto *grif1 = griffin_data->GetSuppressedHit(g1);
+		// Filling required Lists and preproccessing data
+		for (auto j = 0; j < fGrif->GetSuppressedMultiplicity(fGriffinBgo); ++j) {
+			det = fGrif->GetSuppressedHit(j)->GetArrayNumber();
+	        if(fGrif->GetSuppressedHit(j)->GetKValue()!=700) {continue;} // removes GRIFFIN hits pileup events
+	        // Applying energy calibration
+	        //energyTmp = offset[det-1] + gain[det-1]*fGrif->GetSuppressedHit(i)->GetCharge() + non_lin[det-1]*fGrif->GetSuppressedHit(i)->GetCharge()*fGrif->GetSuppressedHit(i)->GetCharge();
+	        //energyTmp += ((double) rand() / RAND_MAX - 0.5);
+	        energyTmp = fGrif->GetSuppressedHit(j)->GetEnergy();
+	        suppr_en.push_back(energyTmp);
+	        pos.push_back(fGrif->GetSuppressedHit(j)->GetPosition(145.0));
+	        gamma_time.push_back(fGrif->GetSuppressedHit(j)->GetTime());
+		}
 
-			if (grif1->GetKValue() != 700) {continue;} // remove GRIFFIN pileup events
+		for (auto g1 = 0; g1 < suppr_en.size(); ++g1) {
 
 			// gamma-gamma matrices
-			for(auto g2 = 0; g2 < griffin_data->GetSuppressedMultiplicity(fGriffinBgo); ++g2) {
+			for(auto g2 = 0; g2 < suppr_en.size(); ++g2) {
 				if (g1 == g2) continue;
-				auto *grif2 = griffin_data->GetSuppressedHit(g2);
 
-				double angle = grif1->GetPosition(145.0).Angle(grif2->GetPosition(145.0)) * 180. / TMath::Pi();
+	            double angle = pos.at(g1).Angle(pos.at(g2)) * 180. / TMath::Pi();
 				if (angle < 0.0001) continue;
 
 				int angleIndex = GetAngleIndex(angle, fAngleCombinations);
+				double ggTime = TMath::Abs(gamma_time.at(g1) - gamma_time.at(g2));
 
 				// check for bad angles
 				if (angleIndex == -1){
 					std::cout << "Bad Angle" << std::endl;
 					continue;
 				}
-				/*j
-				if (i < 50 && angleIndex != -1) {
-					std::cout << "Total number of angles: " << fAngleCombinations.size() << std::endl;
-					std::cout << "Angle: " << angle << " AngleIndex: " << angleIndex << " Closest Angle: " << fAngleCombinations[angleIndex] << std::endl;
+
+				// Generating/Retrieving histograms
+  				TH1F *myhist = ((TH1F *)0);
+				if (angleIndex < HList.GetSize()) myhist = ((TH1F *)(HList.At(index)));
+				if (!myhist){
+					myhist = new TH1F(TString::Format("gammaGammaSub%i", angleIndex),
+									  Form("%.1f^{o}: #gamma-#gamma, time-random-bg subtracted", fAngleCombinations[i]),
+									  gbin, glow, ghigh,
+									  gbin, glow, ghigh);
+					HList.AddAtAndExpand(myhist, index);
+				} // !myhist
+
+				// Filling histogram
+				if (ggTime < ggHigh){
+					//myhist->Fill(suppr_en.at(g1), suppr_en.at(g2));
+				}
+				else if (bgLow < ggTime && ggTime < bgHigh){
+					//myhist->Fill(suppr_en.at(g1), suppr_en.at(g2), -ggHigh/(bgHigh-bgLow));
 				}
 
-				fGammaGamma.grif1Energy = grif1->GetEnergy();
-				fGammaGamma.grif2Energy = grif2->GetEnergy();
-				fGammaGamma.grif1ArrayNumber = grif1->GetArrayNumber();
-				fGammaGamma.grif2ArrayNumber = grif2->GetArrayNumber();
-				fGammaGamma.deltaTime = TMath::Abs(grif1->GetTime() - grif2->GetTime());
-				fGammaGamma.angle = angle;
-
-				griffin_griffin_tree->Fill();
-				*/
 			} // grif2
 		} // grif1
 
@@ -132,16 +157,38 @@ int ProcessData(){
 
 	progress_bar.done();
 
-	/*
-	   int output_check = WriteTree(out_file, griffin_singles_tree);
-	   if (output_check != 0) {
-	    std::cout << "Could not write output file ... exiting" << std::endl;
-	    return 1;
-	   }
-	 */
+	//Writing histograms to file
+	TFile *out_file = new TFile(Form("gg_%i", run_number), "RECREATE");
+	//out_file->cd();
+	//HList.Write();
 
 	return 0;
 } // ProcessData
+
+/*
+for (loop over events, elements, tracks, hits)
+{
+// Note: you must be sure that 0 <= index <= SomeReasonableMaxValue
+// because the “HList” total RAM usage will be about
+// (1 … 2) * SomeReasonableMaxValue * sizeof(a_pointer)
+Int_t index = (*elementId).at(trackIt).at(hitIt);
+if (index < 0) continue; // just a precaution
+
+  TH1F *myhist = ((TH1F *)0);
+  if (index < HList.GetSize()) myhist = ((TH1F *)(HList.At(index)));
+  if (!myhist)
+    {
+      myhist = new TH1F(TString::Format("h_element_%d", index),
+                        "Response time;t[ns];Number of hits",
+                        300, 0., 30.);
+      HList.AddAtAndExpand(myhist, index);
+    } // if (!myhist) ...
+
+  myhist->Fill(time, 1.);
+} // for (loop over events, elements, tracks, hits) ...
+
+HList.Write();[/code]
+*/
 
 /************************************************************//**
  * Displays humourous loading message
