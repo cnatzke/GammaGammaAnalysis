@@ -1,5 +1,5 @@
 # GammaGammaAnalysis
-Analyses the gamma gamma tree produced in the AnalysisTreeConverter
+Creates gamma gamma histograms from Analysis trees
 
 # Install
 Download files
@@ -10,6 +10,7 @@ Build program using standard cmake process, e.g.
 ```
 mkdir myBuild && cd myBuild
 cmake ..
-make && make install
+make 
+make install # if you would like to install the programs elsewhere.
 ```
 Enjoy looking at gamma gamma plots

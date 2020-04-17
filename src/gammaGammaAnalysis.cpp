@@ -15,6 +15,8 @@
 #include "TGRSIUtilities.h"
 #include "TParserLibrary.h" // needed for GetRunNumber
 #include "TMath.h"
+#include "TH2.h"
+#include "TObjArray.h"
 //#include "TGRSIRunInfo.h"
 
 #include "progress_bar.h"
@@ -64,14 +66,16 @@ int ProcessData(){
 	std::string fName = gChain->GetCurrentFile()->GetName();
 	int run_number = GetRunNumber(fName.c_str());
 	const char* branch_name = "TGriffin";
+	TObjArray gammaGammaSubList(0);
+	TObjArray gammaGammaMixedList(0);
+
 	float ggHigh = 100.; // max time difference for gamma gamma
-	float ggLow = 500.; // min time difference for gamma gamma
+	float bgLow = 500.; // min time difference for gamma gamma
 	float bgHigh = 2000.; // max time diff for gamma gamma bg
 
-	float gbin = 5500;
-	float gx = 0;
-	float gy = gbin;
-
+	float gbin = 5500.;
+	float gLow = 0.;
+	float gHigh = gbin;
 
 	std::cout << "Processing run " << run_number << " with " << gChain->GetNtrees() << " file(s)" << std::endl;
 
@@ -82,16 +86,15 @@ int ProcessData(){
 		std::cout << "Succesfully found " << branch_name << " branch" << std::endl;
 	}
 
-	TObjArray HList(0);
-
 	// display loading message
-    DisplayLoadingMessage();
+	DisplayLoadingMessage();
 
 	/* Creates a progress bar that has a width of 70,
 	 * shows '=' to indicate completion, and blank
 	 * space for incomplete
 	 */
 	ProgressBar progress_bar(analysis_entries, 70, '=', ' ');
+	//for (auto i = 0; i < analysis_entries/100; i++) {
 	for (auto i = 0; i < analysis_entries; i++) {
 		// retrieve entries from trees
 		gChain->GetEntry(i);
@@ -99,96 +102,120 @@ int ProcessData(){
 		// Filling required Lists and preproccessing data
 		for (auto j = 0; j < fGrif->GetSuppressedMultiplicity(fGriffinBgo); ++j) {
 			det = fGrif->GetSuppressedHit(j)->GetArrayNumber();
-	        if(fGrif->GetSuppressedHit(j)->GetKValue()!=700) {continue;} // removes GRIFFIN hits pileup events
-	        // Applying energy calibration
-	        //energyTmp = offset[det-1] + gain[det-1]*fGrif->GetSuppressedHit(i)->GetCharge() + non_lin[det-1]*fGrif->GetSuppressedHit(i)->GetCharge()*fGrif->GetSuppressedHit(i)->GetCharge();
-	        //energyTmp += ((double) rand() / RAND_MAX - 0.5);
-	        energyTmp = fGrif->GetSuppressedHit(j)->GetEnergy();
-	        suppr_en.push_back(energyTmp);
-	        pos.push_back(fGrif->GetSuppressedHit(j)->GetPosition(145.0));
-	        gamma_time.push_back(fGrif->GetSuppressedHit(j)->GetTime());
+			if(fGrif->GetSuppressedHit(j)->GetKValue()!=700) {continue;} // removes GRIFFIN hits pileup events
+			// Applying energy calibration
+			//energyTmp = offset[det-1] + gain[det-1]*fGrif->GetSuppressedHit(i)->GetCharge() + non_lin[det-1]*fGrif->GetSuppressedHit(i)->GetCharge()*fGrif->GetSuppressedHit(i)->GetCharge();
+			//energyTmp += ((double) rand() / RAND_MAX - 0.5);
+			energyTmp = fGrif->GetSuppressedHit(j)->GetEnergy();
+			suppr_en.push_back(energyTmp);
+			pos.push_back(fGrif->GetSuppressedHit(j)->GetPosition(145.0));
+			gamma_time.push_back(fGrif->GetSuppressedHit(j)->GetTime());
 		}
 
-		for (auto g1 = 0; g1 < suppr_en.size(); ++g1) {
-
+		for (unsigned int g1 = 0; g1 < suppr_en.size(); ++g1) {
 			// gamma-gamma matrices
-			for(auto g2 = 0; g2 < suppr_en.size(); ++g2) {
+			for(unsigned int g2 = 0; g2 < suppr_en.size(); ++g2) {
 				if (g1 == g2) continue;
 
-	            double angle = pos.at(g1).Angle(pos.at(g2)) * 180. / TMath::Pi();
+				double angle = pos.at(g1).Angle(pos.at(g2)) * 180. / TMath::Pi();
 				if (angle < 0.0001) continue;
 
 				int angleIndex = GetAngleIndex(angle, fAngleCombinations);
 				double ggTime = TMath::Abs(gamma_time.at(g1) - gamma_time.at(g2));
 
 				// check for bad angles
-				if (angleIndex == -1){
+				if (angleIndex == -1) {
 					std::cout << "Bad Angle" << std::endl;
 					continue;
 				}
 
 				// Generating/Retrieving histograms
-  				TH1F *myhist = ((TH1F *)0);
-				if (angleIndex < HList.GetSize()) myhist = ((TH1F *)(HList.At(index)));
-				if (!myhist){
-					myhist = new TH1F(TString::Format("gammaGammaSub%i", angleIndex),
-									  Form("%.1f^{o}: #gamma-#gamma, time-random-bg subtracted", fAngleCombinations[i]),
-									  gbin, glow, ghigh,
-									  gbin, glow, ghigh);
-					HList.AddAtAndExpand(myhist, index);
+				TH2F *myhist = ((TH2F *) 0); //NULL
+				if (angleIndex < gammaGammaSubList.GetSize()) myhist = ((TH2F *)(gammaGammaSubList.At(angleIndex)));
+				if (!myhist) {
+					myhist = new TH2F(TString::Format("gammaGammaSub%i", angleIndex), Form("%.1f deg #gamma-#gamma, time-random-bg subtracted", fAngleCombinations[angleIndex]), gbin, gLow, gHigh, gbin, gLow, gHigh);
+					gammaGammaSubList.AddAtAndExpand(myhist, angleIndex);
 				} // !myhist
 
 				// Filling histogram
-				if (ggTime < ggHigh){
-					//myhist->Fill(suppr_en.at(g1), suppr_en.at(g2));
+				if (ggTime < ggHigh) {
+					std::cout << "Fill condition " << g1 << " " << g2 <<  " " << suppr_en.at(g1) << std::endl;
+					myhist->Fill(suppr_en.at(g1), suppr_en.at(g2));
+					//myhist->Fill(suppr_en.at(g2), suppr_en.at(g1));
 				}
-				else if (bgLow < ggTime && ggTime < bgHigh){
-					//myhist->Fill(suppr_en.at(g1), suppr_en.at(g2), -ggHigh/(bgHigh-bgLow));
+				else if (bgLow < ggTime && ggTime < bgHigh) {
+					myhist->Fill(suppr_en.at(g1), suppr_en.at(g2), -ggHigh/(bgHigh-bgLow));
+					//myhist->Fill(suppr_en.at(g2), suppr_en.at(g1), -ggHigh/(bgHigh-bgLow));
 				}
-
 			} // grif2
+
+			// EVENT MIXED MATRICES
+			// event mixing, we use the last event as second griffin
+			checkMix = (int)lastgrifEnergy.size();
+			if(checkMix<event_mixing_depth) continue;
+			for(auto lg = 0; lg < (checkMix - 1); ++lg) {
+				unsigned int multLG = lastgrifEnergy.at(lg).size();
+
+				for(unsigned int g3 = 0; g3 < multLG; ++g3) {
+					double angle = pos.at(g1).Angle(lastgrifPosition.at(lg).at(g3)) * 180. / TMath::Pi();
+					if (angle < 0.0001) continue;
+					int angleIndex = GetAngleIndex(angle, fAngleCombinations);
+
+					// Generating/Retrieving histograms
+					TH2F *myhist = ((TH2F *)0);
+					if (angleIndex < gammaGammaMixedList.GetSize()) myhist = ((TH2F *)(gammaGammaMixedList.At(angleIndex)));
+					if (!myhist) {
+						myhist = new TH2F(TString::Format("gammaGammaMixed%i", angleIndex), Form("%.1f deg #gamma-#gamma, event-mixed", fAngleCombinations[angleIndex]), gbin, gLow, gHigh, gbin, gLow, gHigh);
+						gammaGammaMixedList.AddAtAndExpand(myhist, angleIndex);
+					} // !myhist
+
+					// Filling histogram
+					myhist->Fill(suppr_en.at(g1), lastgrifEnergy.at(lg).at(g3));
+				} // end g3
+			} //end LG
+
 		} // grif1
 
 		if (i % 10000 == 0) {
 			progress_bar.display();
 		}
 		++progress_bar; // iterates progress_bar
+
+		// update "last" event
+		lastgrifEnergy.push_back(suppr_en);
+		lastgrifPosition.push_back(pos);
+		lgsize = static_cast<int>(lastgrifEnergy.size());
+		if (lgsize > event_mixing_depth){
+			lastgrifEnergy.erase(lastgrifEnergy.begin());
+			lastgrifPosition.erase(lastgrifPosition.begin());
+		}
+
+		// cleaning up for next event
+		suppr_en.clear();
+		pos.clear();
+		gamma_time.clear();
 	} // end fill loop
 
 	progress_bar.done();
 
 	//Writing histograms to file
-	TFile *out_file = new TFile(Form("gg_%i", run_number), "RECREATE");
-	//out_file->cd();
-	//HList.Write();
+	TFile *out_file = new TFile(Form("gg_%i_histograms.root", run_number), "RECREATE");
+	std::cout << "Writing output file: " << out_file->GetName() << std::endl;
+
+	out_file->cd();
+	TDirectory* dir_TRS = out_file->mkdir("TimeRandomSubtacted");
+	dir_TRS->cd();
+	gammaGammaSubList.Compress();
+	gammaGammaSubList.Write();
+	TDirectory* dir_Mixed = out_file->mkdir("EventMixed");
+	dir_Mixed->cd();
+	gammaGammaMixedList.Compress();
+	gammaGammaMixedList.Write();
+	out_file->Write();
+	delete out_file;
 
 	return 0;
 } // ProcessData
-
-/*
-for (loop over events, elements, tracks, hits)
-{
-// Note: you must be sure that 0 <= index <= SomeReasonableMaxValue
-// because the “HList” total RAM usage will be about
-// (1 … 2) * SomeReasonableMaxValue * sizeof(a_pointer)
-Int_t index = (*elementId).at(trackIt).at(hitIt);
-if (index < 0) continue; // just a precaution
-
-  TH1F *myhist = ((TH1F *)0);
-  if (index < HList.GetSize()) myhist = ((TH1F *)(HList.At(index)));
-  if (!myhist)
-    {
-      myhist = new TH1F(TString::Format("h_element_%d", index),
-                        "Response time;t[ns];Number of hits",
-                        300, 0., 30.);
-      HList.AddAtAndExpand(myhist, index);
-    } // if (!myhist) ...
-
-  myhist->Fill(time, 1.);
-} // for (loop over events, elements, tracks, hits) ...
-
-HList.Write();[/code]
-*/
 
 /************************************************************//**
  * Displays humourous loading message
@@ -196,10 +223,10 @@ HList.Write();[/code]
  ***************************************************************/
 void DisplayLoadingMessage() {
 
-    std::string line;
-    int random = 0;
-    int numOfLines = 0;
-    std::ifstream File("loadingQuotes.txt");
+	std::string line;
+	int random = 0;
+	int numOfLines = 0;
+	std::ifstream File("loadingQuotes.txt");
 
 	int count = 1;
 	random = rand() % 131;
@@ -238,7 +265,7 @@ int GetAngleIndex(double angle, std::vector<double> vec){
 		// searching left half
 		if (angle < vec[mid]) {
 			// if angle is greater than previous to mid, return closest of two
-			if (mid > 0 && angle > vec[mid - 1]){
+			if (mid > 0 && angle > vec[mid - 1]) {
 				return GetClosest(mid - 1, mid, fAngleCombinations, angle);
 			}
 
@@ -247,7 +274,7 @@ int GetAngleIndex(double angle, std::vector<double> vec){
 		}
 		// if angle is greater than mid
 		else{
-			if (mid < vec.size() - 1 && angle < vec[mid + 1]){
+			if (mid < vec.size() - 1 && angle < vec[mid + 1]) {
 				return GetClosest(mid, mid + 1, fAngleCombinations, angle);
 			}
 
