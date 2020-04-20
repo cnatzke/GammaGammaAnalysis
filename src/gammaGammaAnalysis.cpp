@@ -16,7 +16,10 @@
 #include "TParserLibrary.h" // needed for GetRunNumber
 #include "TMath.h"
 #include "TH2.h"
+#include "TH1.h"
 #include "TObjArray.h"
+#include "TParserLibrary.h"
+#include "TEnv.h"
 //#include "TGRSIRunInfo.h"
 
 #include "progress_bar.h"
@@ -37,6 +40,16 @@ int main(int argc, char **argv) {
 		PrintUsage(argv);
 		return 0;
 	}
+
+	// makes time retrival happy
+	std::string grsi_path = getenv("GRSISYS");
+	if(grsi_path.length() > 0) {
+		grsi_path += "/";
+	}
+	grsi_path += ".grsirc";
+	gEnv->ReadFile(grsi_path.c_str(), kEnvChange);
+
+	TParserLibrary::Get()->Load();
 
 	for (auto i = 1; i < argc; i++) AutoFileDetect(argv[i]);
 
@@ -89,6 +102,10 @@ int ProcessData(){
 	// display loading message
 	DisplayLoadingMessage();
 
+	TH1D *dT_total = new TH1D("dT_total", "Time diff between gammas", 2000, 0, 2000);
+	TH1D *dT_coin = new TH1D("dT_coin", "Time diff between gammas", 2000, 0, 2000);
+	TH1D *detID = new TH1D("detID", "Detector ID", 100, 0, 100);
+
 	/* Creates a progress bar that has a width of 70,
 	 * shows '=' to indicate completion, and blank
 	 * space for incomplete
@@ -110,9 +127,12 @@ int ProcessData(){
 			suppr_en.push_back(energyTmp);
 			pos.push_back(fGrif->GetSuppressedHit(j)->GetPosition(145.0));
 			gamma_time.push_back(fGrif->GetSuppressedHit(j)->GetTime());
+			detector_vec.push_back(det);
 		}
 
+		// Filling histograms
 		for (unsigned int g1 = 0; g1 < suppr_en.size(); ++g1) {
+			detID->Fill(detector_vec.at(g1));
 			// gamma-gamma matrices
 			for(unsigned int g2 = 0; g2 < suppr_en.size(); ++g2) {
 				if (g1 == g2) continue;
@@ -122,6 +142,16 @@ int ProcessData(){
 
 				int angleIndex = GetAngleIndex(angle, fAngleCombinations);
 				double ggTime = TMath::Abs(gamma_time.at(g1) - gamma_time.at(g2));
+				/*
+				if (ggTime < ggHigh){
+					std::cout << "g1 time: " << gamma_time.at(g1)
+					<< " g2 time: " << gamma_time.at(g2)
+					<< " dTime: " << ggTime
+					<< std::endl;
+				}
+				*/
+
+				dT_total->Fill(ggTime);
 
 				// check for bad angles
 				if (angleIndex == -1) {
@@ -139,8 +169,8 @@ int ProcessData(){
 
 				// Filling histogram
 				if (ggTime < ggHigh) {
-					std::cout << "Fill condition " << g1 << " " << g2 <<  " " << suppr_en.at(g1) << std::endl;
 					myhist->Fill(suppr_en.at(g1), suppr_en.at(g2));
+					dT_coin->Fill(ggTime);
 					//myhist->Fill(suppr_en.at(g2), suppr_en.at(g1));
 				}
 				else if (bgLow < ggTime && ggTime < bgHigh) {
@@ -194,6 +224,7 @@ int ProcessData(){
 		suppr_en.clear();
 		pos.clear();
 		gamma_time.clear();
+		detector_vec.clear();
 	} // end fill loop
 
 	progress_bar.done();
@@ -203,6 +234,11 @@ int ProcessData(){
 	std::cout << "Writing output file: " << out_file->GetName() << std::endl;
 
 	out_file->cd();
+
+	detID->Write();
+	dT_coin->Write();
+	dT_total->Write();
+
 	TDirectory* dir_TRS = out_file->mkdir("TimeRandomSubtacted");
 	dir_TRS->cd();
 	gammaGammaSubList.Compress();
