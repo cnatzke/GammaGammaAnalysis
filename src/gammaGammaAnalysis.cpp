@@ -102,16 +102,18 @@ int ProcessData(){
 	// display loading message
 	DisplayLoadingMessage();
 
+	/*
 	TH1D *dT_total = new TH1D("dT_total", "Time diff between gammas", 2000, 0, 2000);
 	TH1D *dT_coin = new TH1D("dT_coin", "Time diff between gammas", 2000, 0, 2000);
 	TH1D *detID = new TH1D("detID", "Detector ID", 100, 0, 100);
+	*/
 
 	/* Creates a progress bar that has a width of 70,
 	 * shows '=' to indicate completion, and blank
 	 * space for incomplete
 	 */
 	ProgressBar progress_bar(analysis_entries, 70, '=', ' ');
-	//for (auto i = 0; i < analysis_entries/100; i++) {
+	//for (auto i = 0; i < analysis_entries/10000; i++) {
 	for (auto i = 0; i < analysis_entries; i++) {
 		// retrieve entries from trees
 		gChain->GetEntry(i);
@@ -127,12 +129,12 @@ int ProcessData(){
 			suppr_en.push_back(energyTmp);
 			pos.push_back(fGrif->GetSuppressedHit(j)->GetPosition(145.0));
 			gamma_time.push_back(fGrif->GetSuppressedHit(j)->GetTime());
-			detector_vec.push_back(det);
+	//		detector_vec.push_back(det);
 		}
 
 		// Filling histograms
 		for (unsigned int g1 = 0; g1 < suppr_en.size(); ++g1) {
-			detID->Fill(detector_vec.at(g1));
+			//detID->Fill(detector_vec.at(g1));
 			// gamma-gamma matrices
 			for(unsigned int g2 = 0; g2 < suppr_en.size(); ++g2) {
 				if (g1 == g2) continue;
@@ -151,7 +153,7 @@ int ProcessData(){
 				}
 				*/
 
-				dT_total->Fill(ggTime);
+				//dT_total->Fill(ggTime);
 
 				// check for bad angles
 				if (angleIndex == -1) {
@@ -170,7 +172,7 @@ int ProcessData(){
 				// Filling histogram
 				if (ggTime < ggHigh) {
 					myhist->Fill(suppr_en.at(g1), suppr_en.at(g2));
-					dT_coin->Fill(ggTime);
+					//dT_coin->Fill(ggTime);
 					//myhist->Fill(suppr_en.at(g2), suppr_en.at(g1));
 				}
 				else if (bgLow < ggTime && ggTime < bgHigh) {
@@ -224,7 +226,7 @@ int ProcessData(){
 		suppr_en.clear();
 		pos.clear();
 		gamma_time.clear();
-		detector_vec.clear();
+		//detector_vec.clear();
 	} // end fill loop
 
 	progress_bar.done();
@@ -235,9 +237,11 @@ int ProcessData(){
 
 	out_file->cd();
 
+	/*
 	detID->Write();
 	dT_coin->Write();
 	dT_total->Write();
+	*/
 
 	TDirectory* dir_TRS = out_file->mkdir("TimeRandomSubtacted");
 	dir_TRS->cd();

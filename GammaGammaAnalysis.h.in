@@ -28,7 +28,7 @@ float energyTmp = 0;
 std::vector<float> suppr_en; // vector which contains the energy values
 std::vector<long> gamma_time; // vector which contains the time values
 std::vector<TVector3> pos; // vector which contains the position values
-std::vector<int> detector_vec; // vector which contains the detector values
+//std::vector<int> detector_vec; // vector which contains the detector values
 
 int det; //GRIFFIN detector number
 
