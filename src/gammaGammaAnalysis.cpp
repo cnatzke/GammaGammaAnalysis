@@ -78,7 +78,6 @@ int main(int argc, char **argv) {
 int ProcessData(){
 	std::string fName = gChain->GetCurrentFile()->GetName();
 	int run_number = GetRunNumber(fName.c_str());
-	const char* branch_name = "TGriffin";
 	TObjArray gammaGammaSubList(0);
 	TObjArray gammaGammaMixedList(0);
 
@@ -289,7 +288,7 @@ int GetAngleIndex(double angle, std::vector<double> vec){
 	if (angle >= vec.back() - 1.) { return vec.size() - 1;}
 
 	// binary search
-	int i = 0, j = vec.size(), mid = 0;
+	unsigned int i = 0, j = vec.size(), mid = 0;
 	while ( i < j ) {
 		mid = (i + j) / 2;
 
