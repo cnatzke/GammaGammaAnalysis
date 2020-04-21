@@ -94,19 +94,29 @@ int ProcessData(){
 
 	long analysis_entries = gChain->GetEntries();
 
-	if (gChain->FindBranch(branch_name)) {
+	if (gChain->FindBranch("TGriffin")) {
 		gChain->SetBranchAddress("TGriffin", &fGrif);
-		std::cout << "Succesfully found " << branch_name << " branch" << std::endl;
+		if (fGrif != NULL){
+			std::cout << "Succesfully found TGriffin branch" << std::endl;
+		} else {
+			std::cout << "Could not find TGriffin branch ... exiting" << std::endl;
+			return 1;
+		}
 	}
+	if (gChain->FindBranch("TGriffinBgo")) {
+		gChain->SetBranchAddress("TGriffinBgo", &fGriffinBgo);
+		if (fGriffinBgo != NULL){
+			std::cout << "Succesfully found TGriffinBgo branch" << std::endl;
+		} else {
+			std::cout << "Could not find TGriffinBgo branch ... exiting" << std::endl;
+			return 1;
+		}
+	}
+
 
 	// display loading message
 	DisplayLoadingMessage();
 
-	/*
-	TH1D *dT_total = new TH1D("dT_total", "Time diff between gammas", 2000, 0, 2000);
-	TH1D *dT_coin = new TH1D("dT_coin", "Time diff between gammas", 2000, 0, 2000);
-	TH1D *detID = new TH1D("detID", "Detector ID", 100, 0, 100);
-	*/
 
 	/* Creates a progress bar that has a width of 70,
 	 * shows '=' to indicate completion, and blank
@@ -134,7 +144,6 @@ int ProcessData(){
 
 		// Filling histograms
 		for (unsigned int g1 = 0; g1 < suppr_en.size(); ++g1) {
-			//detID->Fill(detector_vec.at(g1));
 			// gamma-gamma matrices
 			for(unsigned int g2 = 0; g2 < suppr_en.size(); ++g2) {
 				if (g1 == g2) continue;
@@ -144,16 +153,6 @@ int ProcessData(){
 
 				int angleIndex = GetAngleIndex(angle, fAngleCombinations);
 				double ggTime = TMath::Abs(gamma_time.at(g1) - gamma_time.at(g2));
-				/*
-				if (ggTime < ggHigh){
-					std::cout << "g1 time: " << gamma_time.at(g1)
-					<< " g2 time: " << gamma_time.at(g2)
-					<< " dTime: " << ggTime
-					<< std::endl;
-				}
-				*/
-
-				//dT_total->Fill(ggTime);
 
 				// check for bad angles
 				if (angleIndex == -1) {
@@ -236,12 +235,6 @@ int ProcessData(){
 	std::cout << "Writing output file: " << out_file->GetName() << std::endl;
 
 	out_file->cd();
-
-	/*
-	detID->Write();
-	dT_coin->Write();
-	dT_total->Write();
-	*/
 
 	TDirectory* dir_TRS = out_file->mkdir("TimeRandomSubtacted");
 	dir_TRS->cd();
