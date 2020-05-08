@@ -1,4 +1,3 @@
-./myBuild
-./myAnalysis
-convertedFile.root
-./data
+/GenerateHistograms/myBuild/
+./GenerateHistograms/myAnalysis/
+./GenerateHistograms/data/
