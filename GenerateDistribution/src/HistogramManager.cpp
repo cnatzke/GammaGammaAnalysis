@@ -31,20 +31,20 @@ HistogramManager::~HistogramManager(){
  ***************************************************************/
 TList* HistogramManager::LoadHistograms(TFile* inputFile, const char *dir_name){
 
+    int verbose = 0;
 	TList *hist_list = new TList();
+	TObject *obj;
+	TKey *key;
 
 	// returns list of -1's if file is bad
 	if (!CheckFileIntegrity(inputFile)) return hist_list;
 
 	TDirectory *hist_dir = dynamic_cast<TDirectory*>(inputFile->Get(dir_name));
-
-	TObject *obj;
-	TKey *key;
 	TIter next( hist_dir->GetListOfKeys());
 	while ((key = (TKey *) next())) {
 		obj = hist_dir->Get(key->GetName()); // copy object to memory
         hist_list->Add(obj);
-		printf(" found object:%s\n",key->GetName());
+		if (verbose > 0) std::cout << " found object: " << key->GetName() << std::endl;
 	}
 
 	return hist_list;
