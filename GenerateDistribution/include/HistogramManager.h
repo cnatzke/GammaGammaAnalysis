@@ -10,9 +10,10 @@ public:
 
     HistogramManager();
     ~HistogramManager();
-    TList* LoadHistograms(TFile* inputFile, const char *dir_name);
+    TList* LoadHistograms(std::string fileName, const char *dir_name);
 
 private:
+    TList* ExtractHistograms(TFile* inputFile, const char *dir_name);
 	bool CheckFileIntegrity(TFile* inputFile);
 };
 

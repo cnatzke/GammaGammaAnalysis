@@ -5,8 +5,8 @@
 #define GenerateDistribution_VERSION_MAJOR @GenerateDistribution_VERSION_MAJOR@
 #define GenerateDistribution_VERSION_MINOR @GenerateDistribution_VERSION_MINOR@
 
-void OpenRootFile(std::string fileName);
-void AutoFileDetect(std::string fileName);
+//void OpenRootFile(std::string fileName);
+int AutoFileDetect(std::string fileName);
 void InitializeGRSIEnv();
 void PrintUsage(char* argv[]);
 
