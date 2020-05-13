@@ -1,3 +1,6 @@
 GenerateHistograms/myBuild/
 GenerateHistograms/myAnalysis/
 GenerateHistograms/data/
+GenerateDistribution/myBuild
+GenerateDistribution/myAnalysis
+GenerateDistribution/myData
