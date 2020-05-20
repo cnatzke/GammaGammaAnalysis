@@ -67,6 +67,7 @@ TList* HistogramManager::ExtractHistograms(TFile* inputFile, const char *dir_nam
 		if (verbose > 0) std::cout << " found object: " << key->GetName() << std::endl;
 	}
     std::cout << "Retrieving histograms ... [DONE]" << std::endl;
+	std::cout << std::endl;
 
 	return hist_list;
 } // LoadHistograms

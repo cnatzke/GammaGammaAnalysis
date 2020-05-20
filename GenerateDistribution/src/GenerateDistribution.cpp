@@ -12,7 +12,6 @@
 #include "TGRSIUtilities.h"
 #include "TParserLibrary.h" // needed for GetRunNumber
 #include "TMath.h"
-#include "TParserLibrary.h"
 #include "TEnv.h"
 #include "TList.h"
 #include "TH2.h"
@@ -20,6 +19,7 @@
 
 #include "GenerateDistribution.h"
 #include "HistogramManager.h"
+#include "FitManager.h"
 
 int main(int argc, char **argv) {
 
@@ -34,9 +34,13 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+
 	HistogramManager *hist_man = new HistogramManager();
+	FitManager fit_man;
 	int file_type = 0;
 	TList *time_random_hist_list;
+	std::vector<TH1D*> time_random_projection_vec;
+	std::vector<TH1D*> time_random_clone_vec;
 
 	InitializeGRSIEnv();
 	file_type = AutoFileDetect(argv[1]);
@@ -48,6 +52,17 @@ int main(int argc, char **argv) {
 	} else {
 		return 1;
 	}
+
+	time_random_projection_vec = fit_man.GenerateProjections(time_random_hist_list, 1300, 1500, 1162, 1182); // 1332 keV Gate, 1172 fit
+	time_random_clone_vec = fit_man.CloneProjections(time_random_projection_vec, 1162, 1182); // Fitting 1172 keV
+
+	TFile out_file("ProjectedHistograms.root", "RECREATE");
+	for (unsigned int i = 0; i < time_random_clone_vec.size(); i++){
+		fit_man.FitPeak(time_random_clone_vec.at(i), 1172, 1162, 1182);
+		time_random_clone_vec.at(i)->Write(Form("corr_%i", i));
+
+	}
+	out_file.Close();
 
 	return 0;
 } // main
