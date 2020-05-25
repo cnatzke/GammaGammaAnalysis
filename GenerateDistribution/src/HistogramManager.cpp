@@ -60,13 +60,13 @@ TList* HistogramManager::ExtractHistograms(TFile* inputFile, const char *dir_nam
 
 	TDirectory *hist_dir = dynamic_cast<TDirectory*>(inputFile->Get(dir_name));
 	TIter next( hist_dir->GetListOfKeys());
-    std::cout << "Retrieving histograms ..." << std::endl;
+    std::cout << "Retrieving " << dir_name << " histograms ... " << std::endl;
 	while ((key = (TKey *) next())) {
 		obj = hist_dir->Get(key->GetName()); // copy object to memory
         hist_list->Add(obj);
 		if (verbose > 0) std::cout << " found object: " << key->GetName() << std::endl;
 	}
-    std::cout << "Retrieving histograms ... [DONE]" << std::endl;
+    std::cout << "Retrieving " << dir_name << " histograms ... [DONE]" << std::endl;
 	std::cout << std::endl;
 
 	return hist_list;

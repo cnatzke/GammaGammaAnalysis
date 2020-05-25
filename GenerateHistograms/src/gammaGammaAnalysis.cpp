@@ -196,6 +196,7 @@ int ProcessData(){
 					if (angleIndex < gammaGammaMixedList.GetSize()) myhist = ((TH2F *)(gammaGammaMixedList.At(angleIndex)));
 					if (!myhist) {
 						myhist = new TH2F(TString::Format("gammaGammaMixed%i", angleIndex), Form("%.1f deg #gamma-#gamma, event-mixed", fAngleCombinations[angleIndex]), gbin, gLow, gHigh, gbin, gLow, gHigh);
+						myhist->Sumw2(); // setting so errors are properly calculated
 						gammaGammaMixedList.AddAtAndExpand(myhist, angleIndex);
 					} // !myhist
 

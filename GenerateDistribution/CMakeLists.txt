@@ -42,9 +42,9 @@ file(GLOB SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 # Naming main executable
 add_executable(GenerateDistribution ${SOURCES})
 
-add_custom_command(TARGET GenerateDistribution PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-${PROJECT_SOURCE_DIR}/misc/ $<TARGET_FILE_DIR:GenerateDistribution>)
+#add_custom_command(TARGET GenerateDistribution PRE_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_directory
+#${PROJECT_SOURCE_DIR}/misc/ $<TARGET_FILE_DIR:GenerateDistribution>)
 
 # linking libraries
 target_link_libraries(GenerateDistribution PUBLIC

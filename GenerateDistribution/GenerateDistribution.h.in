@@ -6,6 +6,7 @@
 #define GenerateDistribution_VERSION_MINOR @GenerateDistribution_VERSION_MINOR@
 
 //void OpenRootFile(std::string fileName);
+int PlotDistribution(std::vector<TH1D*> corrHists, std::vector<TH1D*> uncorrHists, float fitLow, float fitHigh);
 int AutoFileDetect(std::string fileName);
 void InitializeGRSIEnv();
 void PrintUsage(char* argv[]);

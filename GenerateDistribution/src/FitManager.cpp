@@ -90,7 +90,7 @@ std::vector<TH1D*> FitManager::CloneProjections(std::vector<TH1D*> histVec, floa
 
 	for (unsigned int i = 0; i < histVec.size(); i++) {
 		temp_hist = (TH1D*) histVec.at(i)->Clone(Form("projection_binned_%d",i));
-		temp_hist->GetXaxis()->SetRangeUser(lowFit - 10, highFit - 10);
+		temp_hist->GetXaxis()->SetRangeUser(lowFit - 10, highFit + 10);
 		if (i == 0) {
 			total_proj = (TH1D*) histVec.at(i)->Clone("total_proj");
 		} else {
@@ -115,12 +115,17 @@ std::vector<TH1D*> FitManager::CloneProjections(std::vector<TH1D*> histVec, floa
  *
  * @param
  ***************************************************************/
-void FitManager::FitPeak(TH1D* inputHist, float peakPos, float lowFit, float highFit)
+TRWPeak* FitManager::FitPeak(TH1D* inputHist, float peakPos, float lowFit, float highFit)
 {
-	int verbose = 1;
+	int verbose = 0;
 
 	TPeakFitter *pf = new TPeakFitter(lowFit, highFit);
 	TRWPeak *peak = new TRWPeak(peakPos);
+
+	// using initial Guess
+	peak->GetFitFunction()->SetParameter(1, peakPos);
+	peak->GetFitFunction()->SetParameter(2, 1.0);
+
 	pf->AddPeak(peak);
 	pf->Fit(inputHist, "L");
 
@@ -136,11 +141,13 @@ void FitManager::FitPeak(TH1D* inputHist, float peakPos, float lowFit, float hig
 		std::cout << "Summed peak area = " << peak->Area() << " +- " << peak->AreaErr() << std::endl;
 		peakPos = peak->GetFitFunction()->GetParameter(1);
 		double sigma = peak->GetFitFunction()->GetParameter(2);
-		std::cout << "Fixing peak position to " << peakPos << ", and sigma to " << sigma << " (FWHM = " <<2.35*sigma << ")" << std::endl;
+		std::cout << "Fixing peak position to " << peakPos << ", and sigma to " << sigma << " (FWHM = " << 2.35 * sigma << ")" << std::endl;
 	}
 
-	   if(peak->Area() < 1.) {
-	    std::cerr << "Error in fitting: either the fit went wrong, or there isn't enough statistics to do anything" << std::endl;
-	   }
+	if(peak->Area() < 1.) {
+		std::cerr << "Error in fitting: either the fit went wrong, or there isn't enough statistics to do anything" << std::endl;
+	}
+
+	return peak;
 
 } // FitPeak
