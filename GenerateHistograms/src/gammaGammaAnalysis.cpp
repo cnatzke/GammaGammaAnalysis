@@ -164,6 +164,7 @@ int ProcessData(){
 				if (angleIndex < gammaGammaSubList.GetSize()) myhist = ((TH2F *)(gammaGammaSubList.At(angleIndex)));
 				if (!myhist) {
 					myhist = new TH2F(TString::Format("gammaGammaSub%i", angleIndex), Form("%.1f deg #gamma-#gamma, time-random-bg subtracted", fAngleCombinations[angleIndex]), gbin, gLow, gHigh, gbin, gLow, gHigh);
+					myhist->Sumw2(); // setting so errors are properly calculated
 					gammaGammaSubList.AddAtAndExpand(myhist, angleIndex);
 				} // !myhist
 
@@ -201,7 +202,7 @@ int ProcessData(){
 					} // !myhist
 
 					// Filling histogram
-					myhist->Fill(suppr_en.at(g1), lastgrifEnergy.at(lg).at(g3));
+				myhist->Fill(suppr_en.at(g1), lastgrifEnergy.at(lg).at(g3));
 				} // end g3
 			} //end LG
 
