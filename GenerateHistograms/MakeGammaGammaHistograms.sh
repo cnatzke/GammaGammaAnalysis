@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ANALDIR=/tig/belodon_data4/S9038/S9038-Nov2019/AnalysisTrees
-HISTDIR=/tig/belodon_data4/S9038/Projects/GammaGammaAnalysis/myAnalysis/Histograms
+HISTDIR=/tig/belodon_data4/S9038/Projects/GammaGammaAnalysis/GenerateHistograms/myAnalysis/Histograms
 DLEN=${#ANALDIR}
-SORTCODE=/tig/belodon_data4/S9038/Projects/GammaGammaAnalysis/myBuild/GammaGammaAnalysis
+SORTCODE=/tig/belodon_data4/S9038/Projects/GammaGammaAnalysis/GenerateHistograms/myBuild/GammaGammaAnalysis
 
 # calibration files
 CALFILE=/tig/belodon_data4/S9038/S9038-Nov2019/PreSrcCal.cal
