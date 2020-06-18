@@ -60,10 +60,14 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	float fit_low = 1162;
-	float fit_high = 1182;
-	time_random_projection_vec = fit_man.GenerateProjections(time_random_hist_list, 1300, 1500, fit_low, fit_high); // 1332 keV Gate, 1172 fit
-	event_mixed_projection_vec = fit_man.GenerateProjections(event_mixed_hist_list, 1300, 1500, fit_low, fit_high); // 1332 keV Gate, 1172 fit
+	float gate_low = 500;
+	float gate_high = 600;
+   float peak_of_interest = 1770;
+	float fit_low = peak_of_interest - 10;
+	float fit_high = peak_of_interest + 10;
+	
+	time_random_projection_vec = fit_man.GenerateProjections(time_random_hist_list, gate_low, gate_high, fit_low, fit_high);
+	event_mixed_projection_vec = fit_man.GenerateProjections(event_mixed_hist_list, gate_low, gate_high, fit_low, fit_high);
 
 	time_random_clone_vec = fit_man.CloneProjections(time_random_projection_vec, fit_low, fit_high);
 	event_mixed_clone_vec = fit_man.CloneProjections(event_mixed_projection_vec, fit_low, fit_high);
@@ -92,12 +96,12 @@ int PlotDistribution(std::vector<TH1D*> correlatedHists, std::vector<TH1D*> even
 	std::vector<double> fAngleCombinations = {15.442, 21.9054, 29.1432, 33.1433, 38.382, 44.57, 47.4453, 48.7411, 51.4734, 55.1704, 59.9782, 60.1024, 62.3396, 62.4924, 63.4231, 68.9567, 71.4314, 73.3582, 73.6291, 75.7736, 80.9423, 81.5464, 83.8936, 86.868, 88.9658, 91.0342, 93.132, 96.1064, 98.4536, 99.0577, 104.226, 106.371, 106.642, 108.569, 111.043, 116.577, 117.508, 117.66, 119.898, 120.022, 124.83, 128.527, 131.259, 132.555, 135.43, 141.618, 146.857, 150.857, 158.095, 164.558, 180.0};
 
 	// setting header for fits Data
-	fits_file << "Angle, Corr Area, Corr Area Errror, Uncorr Area, Uncorr Area Error" << std::endl;
+	fits_file << "Angle Index, Angle, Corr Area, Corr Area Errror, Uncorr Area, Uncorr Area Error" << std::endl;
 
 	TFile out_file("ProjectedHistograms.root", "RECREATE");
 	for (unsigned int i = 0; i < correlatedHists.size(); i++) {
-		fitted_peak = fit_man.FitPeak(correlatedHists.at(i), 1172, 1162, 1182);
-		fitted_peak_uncorr = fit_man.FitPeak(eventMixedHists.at(i), 1172, 1162, 1182);
+		fitted_peak = fit_man.FitPeak(correlatedHists.at(i), fitLow + 10, fitLow, fitHigh);
+		fitted_peak_uncorr = fit_man.FitPeak(eventMixedHists.at(i), fitLow + 10, fitLow, fitHigh);
 
 		if (i == 0) {
 			correlatedHists.at(i)->Write("total_proj");
@@ -114,7 +118,8 @@ int PlotDistribution(std::vector<TH1D*> correlatedHists, std::vector<TH1D*> even
 			          << fitted_peak_uncorr->Area() << ", " << fitted_peak_uncorr->AreaErr()
 			          << std::endl;
 		} else {
-			fits_file << fAngleCombinations.at(i - 1) << ", "
+			fits_file << i << ", "
+                   << fAngleCombinations.at(i - 1) << ", "
 			          << fitted_peak->Area() << ", " << fitted_peak->AreaErr() << ", "
 			          << fitted_peak_uncorr->Area() << ", " << fitted_peak_uncorr->AreaErr()
 			          << std::endl;

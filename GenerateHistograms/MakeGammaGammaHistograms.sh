@@ -6,7 +6,8 @@ DLEN=${#ANALDIR}
 SORTCODE=/tig/belodon_data4/S9038/Projects/GammaGammaAnalysis/GenerateHistograms/myBuild/GammaGammaAnalysis
 
 # calibration files
-CALFILE=/tig/belodon_data4/S9038/S9038-Nov2019/PreSrcCal.cal
+#CALFILE=/tig/belodon_data4/S9038/S9038-Nov2019/PreSrcCal.cal
+CALFILE=/tig/belodon_data4/S9038/S9038-Nov2019/PostSrcCal.cal
 #CFILE=/tig/belodon_data4/S9038/PostSrcCal.cal
 
 m=15600 #Only Sort after this run First good run: 52042
@@ -28,7 +29,12 @@ bad_run_check() {
 
 if [ $# -eq 0 ]
 then
-    echo "0 argument(s) not implemented yet"
+   echo "Pass 1 or 2 arguments"
+   echo "1: $0 run_number"
+   echo "   Process all subruns in run_number"
+   echo "2: $0 run_number batch_size"
+   echo "   Process all subruns in run_number in batches of batch_size"
+
    #for f in $ANALDIR/*.root
 #
    #do
@@ -104,45 +110,96 @@ then
       fi
 fi
 
-# for a range of runs
-if [ $# -eq 2 ] # Histogram runs between the two input values
+# for a range of subruns
+if [ $# -eq 2 ] # Run Number, Batch size
 then
-    echo "2 argument(s) not implemented yet"
-   #for ((i=$1; i<=$2; ++i));
-   #do
-   #   # checks for bad run
-   #   #bad_run_check $BAD_RUN_LIST $i && continue
-#
-   #   RUNFILES=$ANALDIR/analysis${i}_"*".root
-   #   HFILE=$HISTDIR/TwoPhotonGriffinAnglePlots${i}_"*".root
-   #   echo $HFILE
-#
-   #   if [ $i -gt $m ] && [ $n -gt $i ];
-   #   then
-   #      if [ ! -f $HFILE ];
-   #      then
-   #         echo "$SORTCODE $RUNFILES $SELECTOR --max-workers=4"
-   #         $SORTCODE $RUNFILES $SELECTOR --max-workers=4
-   #         mv TwoPhotonGriffinAnglePlots* $HISTDIR/
-   #      fi
-#  #       if [ -f $HFILE ]
-#  #       then
-#  #          # if the sort code gets updated or the analysis tree is updated
-#  #          if [ $HFILE -ot $SORTCODE ] || [ $HFILE -ot $f ];
-#  #          then
-#  #             echo "$SORTCODE $RUNFILES $SELECTOR --max-workers=4"
-#  #             #$SORTCODE $RUNFILES $SELECTOR --max-workers=4
-#  #             mv TwoPhotonGriffinAnglePlots* $HISTDIR/
-#  #          fi
-#  #       fi
-   #   fi
-   #done
+    declare -a FILE_BATCH
+    declare -a FILE_LIST
+    FILE_ITER=1
+    BATCH_COUNTER=0
 
+    RUNFILES=$ANALDIR/analysis${i}_"*".root
+    HFILE=$HISTDIR/gg_${i}.root
+
+    FILE_LIST=$(find ${ANALDIR}/ -name analysis"$1"_???.root | sort)
+    NUM_FOUND=$(find ${ANALDIR}/ -name analysis"$1"_???.root | wc -l)
+    TOTAL_BATCHES=$((NUM_FOUND / $2 + 1))
+    echo "Found ${NUM_FOUND} Files"
+    echo "Requires ${TOTAL_BATCHES} Batches"
+
+    for file in $FILE_LIST;
+    do
+
+        FILE_BATCH=("${FILE_BATCH[@]}" "$file")
+
+        # Process files in specified batch sizes
+        if (( $FILE_ITER % $2 == 0 ))
+        then
+            #echo "Files: ${FILE_BATCH[@]}"
+
+            if [ $1 -gt $m ] && [ $n -gt $1 ];
+            then
+                if [ ! -f $HFILE ];
+                then
+                    #echo "$SORTCODE ${FILE_BATCH[@]} $CALFILE"
+                    #echo "mv gg_* $HISTDIR/gg_$1_$BATCH_COUNTER.root"
+                    $SORTCODE ${FILE_BATCH[@]} $CALFILE
+                    mv gg_* $HISTDIR/gg_${1}_${BATCH_COUNTER}.root
+                fi
+                if [ -f $HFILE ]
+                then
+                   # if the sort code gets updated or the analysis tree is updated
+                    if [ $HFILE -ot $SORTCODE ] || [ $HFILE -ot $file ];
+                    then
+                        echo "Sort code or analysis tree have changed, rerunning sort"
+                        echo "$SORTCODE $FILE_BATCH $CALFILE"
+                        echo "mv gg_* $HISTDIR/gg_$1_$BATCH_COUNTER.root"
+                    fi
+                fi
+            fi
+
+            unset FILE_BATCH
+            BATCH_COUNTER=$((BATCH_COUNTER + 1))
+        fi
+
+        # Process remaining files
+        if (( $BATCH_COUNTER == $((TOTAL_BATCHES - 1))  && (( $FILE_ITER == $NUM_FOUND)) ))
+        then
+            echo "Files: ${FILE_BATCH[@]}"
+            if [ $1 -gt $m ] && [ $n -gt $1 ];
+            then
+                if [ ! -f $HFILE ];
+                then
+                    #echo "$SORTCODE ${FILE_BATCH[@]} $CALFILE"
+                    #echo "mv gg_* $HISTDIR/gg_$1_$BATCH_COUNTER.root"
+                    $SORTCODE ${FILE_BATCH[@]} $CALFILE
+                    mv gg_* $HISTDIR/gg_${i}_total.root
+                fi
+                if [ -f $HFILE ]
+                then
+                   # if the sort code gets updated or the analysis tree is updated
+                    if [ $HFILE -ot $SORTCODE ] || [ $HFILE -ot $file ];
+                    then
+                        echo "Sort code or analysis tree have changed, rerunning sort"
+                        echo "$SORTCODE $FILE_BATCH $CALFILE"
+                        echo "mv gg_* $HISTDIR/gg_$1_$BATCH_COUNTER.root"
+                    fi
+                fi
+            fi
+
+            unset FILE_BATCH
+        fi
+
+        FILE_ITER=$((FILE_ITER + 1))
+
+    done
 fi
 
 if [[ $# > 2 ]]
 then
-   echo "Pass 0, 1, or 2 arguments"
+   echo "Pass 1 or 2 arguments"
+   echo "1: $0 run_number"
+   echo "   Process all subruns in run_number"
+   echo "2: $0 run_number batch_size"
+   echo "   Process all subruns in run_number in batches of batch_size"
 fi
-
-echo "Done"
